@@ -1,10 +1,9 @@
 do
 let
-    s1 = Sheet {
+    s1 = sheet {
       key = "b4" |- 2,
       mode = "major",
-      numerals = "<1 [4 3] 5 1>",
-      condition = "<t>"
+      numerals = "<1 [4 3] 5 1>"
     }
     fx = mapfx 0.58 [1]
     -- MIDI clock for synchronzing with external devices
