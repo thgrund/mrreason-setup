@@ -15,7 +15,7 @@ var eventmapper = { |result, soundName|
 	// plays a samplebank with summer as a prefix.
 	// i.e. summerbd, summersn or summerhh
 	if (drumBank == 0, {finalSoundName = 'summer' ++ soundName});
-	if (drumBank == 1, {finalSoundName = 'kontakt' ++ soundName})
+	if (drumBank == 1, {finalSoundName = 'kontakt' ++ soundName});
     // Add more drumBanks to your needs
 
 	event.add(\pan -> ((pan + 1) / 2));

@@ -57,4 +57,4 @@ hpf' d t = hpfBy 4 0 d t
 mapfxBy _ _ [] = []
 mapfxBy y c [x] = [(show y, (# cps (c * x)))]
 mapfxBy y c (x:xs) = (show y, (# cps (c * x)) ) : (mapfxBy (y + 1) c xs)
-mapfx = mapfxBy
+mapfx = mapfxBy 1
