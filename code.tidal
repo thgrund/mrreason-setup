@@ -1,60 +1,188 @@
 import Data.Function (on)
-import Data.List (transpose)
+import Data.List (transpose, sortBy, sort)
+import Data.Maybe (fromMaybe)
 
 -- Used for western music theory
-
 -- Sheet datatype
 data Sheet = Sheet
   { key :: Pattern Note
   , mode :: Pattern String
-  , numerals :: Pattern Int
+  , numerals :: String
+  , ptNumerals :: Pattern Int
   , sndDom :: Pattern Bool
   , dim :: Pattern Bool
   , aug :: Pattern Bool
   , triSub :: Pattern Bool
   }
 
+let
 sheet = Sheet {
   key = "c",
-  mode = "major",
+  mode = "<major>",
   numerals = "1",
+  ptNumerals = "0",
   sndDom = "f",
   dim = "f",
   aug = "f",
   triSub = "f"
 }
-
-progWith limit sheet pt  = note ((limit) $ scale (mode sheet) ( (|+|) ((|+|) (numerals sheet) (-2)) pt) |+ (key sheet))
-sndDomProgWith op sheet pt = (note (scale "major" (pt |+ 3)) |- note 7 ) |+ (note $ (op) $ scale "major" ((numerals sheet) |- 1) |+ (key sheet) |+ "7")
-dimProg sheet pt = note (scale "diminished" (pt |- 1)) |+ note (key sheet) |+ note (scale (mode sheet) (numerals sheet)) |- note 3
-augProg sheet pt = note (scale "augmented" (pt |- 1)) |+ note (key sheet) |+ note (scale (mode sheet) ((numerals sheet) |- 1))
+to5Tuple :: [String] -> (Pattern Int, Pattern Bool, Pattern Bool, Pattern Bool, Pattern Bool)
+to5Tuple [a,b,c,d,e] = (parseBP_E a,parseBP_E b,parseBP_E c,parseBP_E d, parseBP_E e)
+notePat :: (Pattern Int, b, c, d, e) -> Pattern Int
+notePat (x, _, _, _, _) = x
+sndDomPat :: (a, Pattern Bool, c, d, e) -> Pattern Bool
+sndDomPat (_, x, _, _, _) = x
+dimPat :: (a, b, Pattern Bool, d, e) -> Pattern Bool
+dimPat (_, _, x, _, _) = x
+augPat :: (a, b, c, Pattern Bool, e) -> Pattern Bool
+augPat (_, _, _, x, _) = x
+triSubPat :: (a, b, c, d, Pattern Bool) -> Pattern Bool
+triSubPat (_, _, _, _, x) = x
+progParse st = to5Tuple $ map (intercalate " ") $ transpose $ map (transformProg) $ foldMap (groupBy (\a b -> ord a `elem` delimeter))
+             $ groupBy (\a b -> ord b `elem` delimeter) st
+            where delimeter = 45:35:[48..57] ++ [65..90] ++ [97..122]
+                  separateNotes st = filter (\x -> not $ x `elem` ['s', 'a', 'd', 't', '#']) st
+                  checkDel st c = (if ('#' `elem` st && c `elem` st) then "1" else "0")
+                  transformProg st = if ('#' `elem` st)
+                      then separateNotes st : (checkDel st 's') : (checkDel st 'd') : (checkDel st 'a') : (checkDel st 't') : []
+                      else (if (Prelude.all (isDigit) (delete '-' st) ) then (st : (take 4 $ repeat "0")) else (take 5 $ repeat st))
+progWith limit sheet pt  = note ((limit) $ scale (mode sheet) ( (|+|) ((|+|) (ptNumerals sheet) (-2)) pt) |+ (key sheet))
+sndDomProgWith op sheet pt = (note (scale "major" (pt |+ 3)) |- note 7 ) |+| (note $ (op) $ scale "major" ((ptNumerals sheet) |- 1) |+ (key sheet) |+ "7") |- note 12
+dimProg sheet pt = note (scale "diminished" (pt |- 1)) |+ note (key sheet) |+| note (scale (mode sheet) (ptNumerals sheet)) |- note 3
+augProg sheet pt = note (scale "augmented" (pt |- 1)) |+ note (key sheet) |+| note (scale (mode sheet) ((ptNumerals sheet) |- 1))
 progWithCondition limit sheet pt = (sew (triSub sheet) (note (-6)) (note 0)) +|
     (sew (sndDom sheet) (sndDomProgWith limit sheet pt)
     $ sew (dim sheet) (dimProg sheet pt)
     $ sew (aug sheet) (augProg sheet pt)
     $ progWith limit sheet pt)
-prog = progWithCondition id
-
+prog sheet = progWithCondition id transformedSheet
+     where sheetTuples = progParse (numerals sheet)
+           transformedSheet = sheet {
+              ptNumerals = notePat sheetTuples
+              , sndDom = sndDomPat sheetTuples
+              , dim = dimPat sheetTuples
+              , aug = augPat sheetTuples
+              , triSub = triSubPat sheetTuples
+            }
+--
 -- Used for using parts and segments
 stacker = Map.fromList
 (!) = (Map.!)
 transformStacker parts = stacker $ map (\x -> (fst $ head x, transform x)) (transpose $ filledWithSilence parts)
-    where allowedAndNeededKeys = ["lead", "bass", "key", "drums", "pad", "clock", "pod", "arp"]
+    where allowedAndNeededKeys = ["lead", "bass", "key", "drums", "pad", "clock", "pod", "arp", "fx", "yamaha", "rhytm"]
           filledWithSilence parts = map (\x -> addSilence x) parts
           addSilence pt = map (\x -> if (Map.member x (pt)) then (x, pt ! x) else (x, silence)) allowedAndNeededKeys
           transform x = transformBy 1 x
           transformBy _ [] = []
           transformBy y [x] = [(show y, snd x)]
           transformBy y (x:xs) = (show y, snd x) : (transformBy (y + 1) xs)
-
+--
 -- Permanent filter transition
 lpfBy x d t = ( cutoff (15000 - (15000 - d) * (rotR t $ slow x envL)))
 lpf' d t = lpfBy 4 d t
 hpfBy x s d t = ( hpf (s + d * (rotR t $ slow x envL)))
 hpf' d t = hpfBy 4 0 d t
-
+--
 -- Timesignature
 mapfxBy _ _ [] = []
-mapfxBy y c [x] = [(show y, (# cps (c * x)))]
-mapfxBy y c (x:xs) = (show y, (# cps (c * x)) ) : (mapfxBy (y + 1) c xs)
+mapfxBy y c [x] = [(show y, (# cps (c * (1/x))))]
+mapfxBy y c (x:xs) = (show y, (# cps (c * (1/x))) ) : (mapfxBy (y + 1) c xs)
 mapfx = mapfxBy 1
+--
+-- Helper (add VN to getN)
+getN' :: Value -> Maybe Note
+getN' (VN f) = Just $ f
+getN' _  = Nothing
+--
+compareNoteEv (Event c1 t1 a1 v1) (Event c2 t2 a2 v2)
+  | Map.lookup "note" v1 == Map.lookup "note" v2 = EQ
+  | Map.lookup "note" v1 <= Map.lookup "note" v2 = LT
+  | otherwise = GT
+--
+-- Generic
+noteMap mapperfunc noteVal = ((fmap (unNote . (mapperfunc) ) $ ((filteredNotes noteVal))))
+      where filteredNotes notes = filterJust $ fmap (getN') 
+                                             $ filterJust 
+                                             $ fmap ( Map.lookup "note") (notes)
+--
+-- linexp
+linexp inMin inMax outMin outMax n
+ | inMin > inMax = 1
+ | n > inMax = outMax
+ | n < inMin = outMin
+ | outMin > outMax = (outMin - calc) + outMax
+ | otherwise = calc
+ where pitch = n + 1 - inMin
+       calc = ((logBase (inMax - inMin + 1) pitch) * (outMax-outMin)) + (outMin)
+--
+linlin inMin inMax outMin outMax n
+ | inMin > inMax = 1
+ | n > inMax = outMax
+ | n < inMin = outMin
+ | otherwise = calc
+ where pitch = n
+       calc = (((pitch - inMin) / (inMax - inMin)) * (outMax - outMin)) + outMin
+--
+-- Exp Macros
+ngain pt = pt # (gain $ noteMap (linexp 12 36 0.6 1) pt)
+--
+ncutoff pt = pt # (cutoff $ noteMap (linlin 0 32 4000 500) pt)
+--
+invWith :: Int -> Pattern ValueMap -> Pattern ValueMap
+invWith y = withEvents aux
+    where aux es = concatMap (steppityIn) (groupBy (\a b -> whole a == whole b) es)
+          steppityIn x = mapMaybe (\(n, ev) -> return ev) 
+            $ enumerate $ sortBy (compareNoteEv) (inv (replicate (abs y) ((applyFunc y negate) (Note 12) )) ((applyFunc y reverse) (sortBy (compareNoteEv) x )))
+          applyFunc y f= if y < 0 then f else id
+          inv _ []          = []
+          inv [] x          = x
+          inv (y:ys) ((Event c t a v):xs) = inv ys ((applyFunc y reverse) (sortBy compareNoteEv (Event c t a (Map.insert "note" (add y v) v ):xs)))
+          add y x = VN $ (fromMaybe (Note 0) $ getN' $ Map.findWithDefault (VN 0) "note" x) + y
+--
+inv :: Pattern Int -> Pattern ValueMap -> Pattern ValueMap 
+inv pt = tParam invWith (segment 1 $ pt)
+--
+openWith :: Bool -> Pattern ValueMap -> Pattern ValueMap
+openWith y = withEvents aux
+    where aux es = concatMap (steppityIn) (groupBy (\a b -> whole a == whole b) es)
+          steppityIn x = mapMaybe (\(n, ev) -> return ev) 
+            $ enumerate (sortBy (compareNoteEv) $ if (y) then (open x) else x)
+          open (xs:[]) = [xs]
+          open (xs:ys:[]) = [xs,ys]
+          open ((Event c1 t1 a1 v1):ys:(Event c2 t2 a2 v2):x) 
+            = (Event c1 t1 a1 (sub v1)) : (Event c2 t2 a2 (sub v2)) : ys : x 
+          sub m = Map.insert "note" (VN $ (fromMaybe (Note 0) $ getN' $ Map.findWithDefault (VN 0) "note" m) - 12) m
+--
+open :: Pattern Bool -> Pattern ValueMap -> Pattern ValueMap 
+open pt = tParam openWith (segment 1 $ pt)
+--
+dropWith :: String -> Pattern ValueMap -> Pattern ValueMap
+dropWith y = withEvents aux
+    where aux es = concatMap (steppityIn) (groupBy (\a b -> whole a == whole b) es)
+          steppityIn x = mapMaybe (\(n, ev) -> return ev)  $ enumerate (drop y (reverse x))
+          drop "0" (xs) = reverse $ xs
+          drop "2" (xs:(Event c t a v):x) = reverse $ xs:x ++ [(Event c t a (sub v))]
+          drop "3" (xs:ys:(Event c t a v):x) = reverse $ xs:ys:x ++ [(Event c t a (sub v))]
+          drop "2p3" (xs:(Event c1 t1 a1 v1):(Event c2 t2 a2 v2):x) = reverse $ xs:x ++ (Event c1 t1 a1 (sub v1)):(Event c2 t2 a2 (sub v2)):[]
+          drop "4" (ws:xs:ys:(Event c t a v):x) = reverse $ ws:xs:ys:x ++ [(Event c t a (sub v))]
+          drop "2p4" (ws:(Event c1 t1 a1 v1):ys:(Event c2 t2 a2 v2):x) = reverse $ ws:ys:x ++ (Event c1 t1 a1 (sub v1)):(Event c2 t2 a2 (sub v2)):[]
+          drop _ x = reverse x 
+          sub m = Map.insert "note" (VN $ (fromMaybe (Note 0) $ getN' $ Map.findWithDefault (VN 0) "note" m) - 12) m
+--
+drop :: Pattern String -> Pattern ValueMap -> Pattern ValueMap
+drop pt = tParam dropWith (segment 1 $ pt)
+--
+updown = fastspread ($) [id, rev]
+updownBy t p = fast t $ spread ($) [id, rotR 1] $ spread ($) [id, rev] $ slow t $ p
+updown' p = updownBy 2 p
+downup = fastspread ($) [rev, id]
+downupBy t p = fast t $ spread ($) [rotR 1, id] $ spread ($) [id, rev] $ slow t $ p
+downup' p = downupBy 2 p
+
+open "0" $ note "[0,1,2,3]"
+
+
+noteMap (linexp 12 36 0.6 1.0) (note "14") -- (0>1)|0.7365...
+
+
+ncutoff $ s "superpiano" # note "0 12 24 36"

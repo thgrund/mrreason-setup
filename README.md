@@ -9,6 +9,7 @@ To be able to use the described concepts, the code under `./code.tidal` should b
 Table of content:
 
 - [Applying modern western music theory](#applying-western-music-theory)
+- [Custom conditional functions](#custom-conditional-functions)
 - [Live coding with parts and segments (for longer compositions)](#live-coding-with-parts-and-segments)
 - [Tips and hints for live coding with longer sets](#tips-and-hints-for-live-coding-with-longer-sets)
 
@@ -23,8 +24,9 @@ I created a template based on the `Sheet` definition that you can find under  `.
 ```haskell
 sheet = Sheet {
   key = "c",
-  mode = "major",
+  mode = "<major>",
   numerals = "1",
+  ptNumerals = "",
   sndDom = "f",
   dim = "f",
   aug = "f",
@@ -38,9 +40,10 @@ When the record `sheet` is available, you can just create a new one and change j
 s1 = sheet {numerals = "<1 1 4 5>"}
 ```
 
-I will explain the usage of each field below. Every field is made of patterns. This means you can use the mini-notation on every field. But you could use functions here too:
+I will explain the usage of the sheet record below. The latest version doesn't allow the use of TidalCycles functions on `numerals` right now, because this field is not a pattern. But I will fix this in the future. The numerals field was changed to allow the usage of numerals identifier. You can think of it as a simple parser on top of the TidalCycles parser.
 
 ``` haskell
+-- This will not work right now
 s1 = sheet {numerals = every 2 (rev) "1 5"}
 ```
 
@@ -71,30 +74,6 @@ Seventh chords based on the roman numerals based on their scale degree:
 
 ```haskell
 d1 $ s "superpiano" <| prog s1 "[1,3,5,7]"
-```
-
-When I need the harmony to stay on a similar level, then I create inversions. But I just limit the range of notes with the modulo operator like this:
-
-```haskell
-d1 $ s "superpiano" <| progWith (|% 12) s1 "[1,3,5,7]"
-```
-
-It's not explicitly used for voice leading but to avoid an up or down movement in the harmony (if you like so).
-Here is an example for the fourth degree of the c major scale:
-
-```haskell
-s1 = sheet {numerals = "4"}
-
-s "superpiano" <| progWith (|% 12) s1 "[1,3,5,7]"
-
--- (0>1)|note: Note {unNote = 5.0}n, s: "superpiano"
--- (0>1)|note: Note {unNote = 9.0}n, s: "superpiano"
--- (0>1)|note: Note {unNote = 0.0}n, s: "superpiano"
--- (0>1)|note: Note {unNote = 4.0}n, s: "superpiano"
-
--- This similar to the second inversion of Fmaj7: note "f'maj7'ii"
--- But the order is not correct. This is just a problem when you try 
--- to arpeggiate the result
 ```
 
 And I really like that you can easily write melodies or sequences that are related to the key and the chord changes (playing with the changes) but the melody notes don't need to be the exact notes from the chords:
@@ -152,34 +131,34 @@ s1 = sheet {mode = "<phrygian!3 minor>", numerals = "<1 2 3 5>"}
 
 ### Secondary dominants
 
-The secondary dominant will be played 7 half steps higher then the original chord would be. This is simply a major chord with a (possible) dominant seven (V7) 7 half steps above the original chord.
+The secondary dominant will be played 5 half steps lower then the original chord would be. This is simply a major chord with a (possible) dominant seven chord (V7) 7 half steps above the original chord. To use it use the `#s` identifier in numerals on the value you want to apply this.
 
 ```haskell
-s1 = sheet {numerals = "<1 6 3 5>", sndDom = "<f t f f>"}
+s1 = sheet {numerals = "<1 6#s 3 5>"}
 ```
 
 ### Tritone substitution
 
-This is just an 6 step offset of the current chord and can be used at any time.
+This is just a 6 step offset of the current chord. This means the chord will be played 6 half steps lower then the original chord. To use it use the `#t` identifier.
 
 ```haskell
-s1 = sheet {numerals = "<1 1 4 5>", triSub = "<f!3 t>"}
+s1 = sheet {numerals = "<1 1 4 5#t>"}
 ```
 
-But usually you would apply the tritone substitution of a dominant chord, basically the fifth of the diatonic chords of a major scale. But we are able to create secondary dominants at any time and then use the tritone substitution concept on it:
+Usually you would apply the tritone substitution of a dominant chord, basically the fifth of the diatonic chords of a major scale. But we are able to create secondary dominants at any time and then use the tritone substitution identifier on it:
 
 ```haskell
-s1 = sheet {numerals = "<1 6 4 5>", triSub = "<f!3 t>", sndDom = "<f t f f>"}
+s1 = sheet {numerals = "<1 6 4 5#ts>"}
 ```
 
 ### Diminshed chords
 
-This will play a full diminished chord one semitone below the original chord. When you apply "[1,3,5,7]" then will each note will be 3 half steps apart. This is a symmetrical chord and any note code be considered as the root.
+This will play a full diminished chord one semitone below the original chord. When you apply "[1,3,5,7]" then will each note will be 3 half steps apart. This is a symmetrical chord and any note can be considered as the root.
 
 You can use this to create chromatic harmony changes:
 
 ```haskell
-s1 = sheet {numerals = "<1 4 5 5>", dim = "<f f t f>"}
+s1 = sheet {numerals = "<1 4 5#d 5>"}
 ```
 
 ### Augmented chords
@@ -187,12 +166,190 @@ s1 = sheet {numerals = "<1 4 5 5>", dim = "<f f t f>"}
 You can use augmented chords as a replacement of a dominant chord too. This will simply replace the chord with the same root.
 
 ```haskell
-s1 = sheet {numerals = "<1 1 2 5>", aug = "<f t f t>"}
+s1 = sheet {numerals = "<1 1#a 2 5#a>"}
+```
+
+### Chord inversions
+
+The `inv` function for creating inversions is inspired by the official TidalCycles inversion mechanism (see [chord inversions](https://tidalcycles.org/docs/reference/harmony_melody/#chord-inversions)). There are two features that comes with the `inv`function that you can not achieve otherwise: 
+
+1. You can create patterns for inversion independently from the underlying chords
+2. You can use negative values two create lower versions of the inversions to create a chord movement without changing the underlying chords.
+
+We start with the neutral value. This means you can use `0` to not change the chord at all:
+
+```haskell
+inv "0" $ prog sheet "[1,3,5,7]"
+```
+
+Every value above 0 will add 12 to the lowest note value n times.
+
+``` haskell
+inv "1" $ prog sheet "[1,3,5,7]"
+inv "1" $ note "[0,1,2,3]" -- note [1,2,3,12]
+```
+
+Every value below 0 will subtract 12 to the highest note value n times.
+
+```haskell
+inv "-1" $ prog sheet "[1,3,5,7]"
+inv "-1" $ note "[0,1,2,3]" -- note [-9,0,1,2]
+```
+
+You can do it as often as you want. There is no limit by the number of notes:
+
+```haskell
+inv "5" $ prog sheet "[1,3,5,7]"
+inv "5" $ note "[0,1,2,3]" -- note [13,14,15,24]
+```
+
+When you do not have a chord then it's like doing an octave offset of the note:
+
+```haskell
+inv "[-1,1]" $ note "[0]" -- note [-12,12]
+```
+
+And of course you can use the mini notation to go wild:
+
+```haskell
+inv "<-2 -1 0 1 2>" $ prog sheet "[1,3,5,7]"
+```
+
+### Drop voice chords
+
+The `drop` function implements the drop voice chords. It lowers at least one specific note by an octave related to it's position in the chord. The neutral element is 0, but every value that is not expected will be ignored as well. 
+
+```haskell
+drop "0" $ prog sheet "[1,3,5,8]" -- equals  prog sheet "[1,3,5,8]"
+```
+
+A drop 2 chord means that the second highest note will be lowered by an octave, which means by 12 semitones and can be achieved in this way:
+
+```haskell
+drop "2" $ prog sheet "[1,3,5,8]"
+drop "2" $ note "[0,1,2,3]" -- note [-10,0,1,3]
+```
+
+A drop 3 chord means that the third highest note will be lowered by an octave, which means by 12 semitones and can be achieved in this way:
+
+```haskell
+drop "3" $ prog sheet "[1,3,5,8]"
+drop "3" $ note "[0,1,2,3]" -- note [-11,0,2,3]
+```
+
+A drop 4 chord means that the fourth highest note will be lowered by an octave, which means by 12 semitones and can be achieved in this way:
+
+```haskell
+drop "4" $ prog sheet "[1,3,5,8]"
+drop "4" $ note "[0,1,2,3]" -- note [-12,1,2,3]
+```
+
+A drop 2+3 chord means that the second and third highest note will be lowered by an octave, which means by 12 semitones and can be achieved in this way:
+
+```haskell
+drop "2p3" $ prog sheet "[1,3,5,8]"
+drop "2p3" $ note "[0,1,2,3]" -- note [-11,-10,0,3]
+```
+
+A drop 2+4 chord means that the second and fourth highest note will be lowered by an octave, which means by 12 semitones and can be achieved in this way:
+
+```haskell
+drop "2p4" $ prog sheet "[1,3,5,8]"
+drop "2p4" $ note "[0,1,2,3]" -- note [-12,-10,1,3]
+```
+
+And of course you can use the mini notation to go wild (again):
+
+```haskell
+drop "<2 3 4 2p4 2p3>" $ prog sheet "[1,3,5,8]"
+```
+
+### Open Voice chords 
+
+The open voice chord mechanism in TidalCycles is basically a drop 2+4 voicing and is equivalent to the use of `drop "2p4"`. But I added a shortcut to this that is applicable with a boolean pattern:
+
+```haskell
+open "t" $ prog sheet "[1,3,5,8]"
+open "t" $ note "[0,1,2,3]" -- note [-12,-10,1,3]
+open "<t f>" $ prog sheet "[1,3,5,8]"
 ```
 
 ### The limitations
 
+- As mentioned earlier you are not able to apply functions on the `numerals` property of the sheet record right now.
 - Syncopation is hard to achieve because you are bound to the chord changes. This is because rythm structures comes from both directions (|+|). This means from the numeral chord changes and the pattern you use to define which chord is played concretely  -> could be patternable if neccessary
+
+## Custom conditional functions 
+
+### Input and output mapping
+
+The first function `linlin` maps a linear input to a linear output. This is more flexible then the [TidalCycles function range](https://tidalcycles.org/docs/reference/alteration/#range) because you can customize the input range as well. The structure of the function looks like this and will return a `Pattern Double`:
+
+```haskell
+noteMap (linlin inMin inMax outMin outMax)
+```
+
+ Every input value that is smaller then  `inMin` will be mapped to the `outMin`
+
+```haskell
+noteMap (linlin 12 36 0.6 1) (note "6") -- (0>1)|0.6
+```
+
+ Every input value that is bigger then  `inMax` will be mapped to the `outMax`
+
+```haskell
+noteMap (linlin 12 36 0.6 1) (note "40") -- (0>1)|1.0
+```
+
+The linear input will be mapped to the linear output. This means that the middle value between `inMin`and `inMax` will be exactly the middle value of `outMin` and `outMax`
+
+```haskell
+noteMap (linlin 12 36 0.6 1) (note "24") -- (0>1)|0.8
+noteMap (linlin 12 36 0.6 1) (note "30") -- (0>1)|0.9
+```
+
+You can flip the `outMin` and `outMax` to flip the mapping. This means that a higher input value will create a smaller output value.
+
+```haskell
+noteMap (linlin 12 36 1 0.6) (note "30") -- (0>1)|0.7
+noteMap (linlin 12 36 1 0.6) (note "6") -- (0>1)|1.0
+noteMap (linlin 12 36 1 0.6) (note "40") -- (0>1)|0.6
+```
+
+Similiar to `linlin` there is the function `linexp` that has a similar functionality but maps a linear input to an exponential output. Unfortunately flip outMin and outMax will not make a difference.
+
+```haskell
+noteMap (linexp 12 36 0.6 1.0) (note "30") -- (0>1)|0.9658...
+noteMap (linexp 12 36 0.6 1.0) (note "14") -- (0>1)|0.7365...
+```
+
+### Influence function values related to the pitch
+
+You can use `linlin` and `linexp` to create a function that is related to the note of pattern. I.e. the higher the note value of a pattern is the louder it will become. This is interesting for creating arpeggios where the highest note will be highlighted.
+
+```haskell
+ngain pt = pt # (gain $ noteMap (linexp 12 36 0.6 1) pt)
+
+ngain $ s "superpiano" # note "0 12 24 36"
+
+-- (0>¼)-1  | gain: 0.6f, note: 0.0n (c5), s: "superpiano"
+-- 0-(¼>½)-1| gain: 0.6f, note: 12.0n (c6), s: "superpiano"
+-- 0-(½>¾)-1| gain: 0.9187385282334165f, note: 24.0n (c7), s: "superpiano"
+-- 0-(¾>1)  | gain: 1.0f, note: 36.0n (c8), s: "superpiano"
+```
+
+But of course you can use this to influence any kind of function that accepts `Pattern Double` like `cutoff`, `start`, `end` or `speed`:
+
+```haskell
+ncutoff pt = pt # (cutoff $ noteMap (linlin 0 32 4000 500) pt)
+
+ncutoff $ s "superpiano" # note "0 12 24 36"
+
+-- (0>¼)-1  | cutoff: 4000.0f, note: 0.0n (c5), s: "superpiano"
+-- 0-(¼>½)-1| cutoff: 2687.5f, note: 12.0n (c6), s: "superpiano"
+-- 0-(½>¾)-1| cutoff: 1375.0f, note: 24.0n (c7), s: "superpiano"
+-- 0-(¾>1)  | cutoff: 500.0f, note: 36.0n (c8), s: "superpiano"
+```
 
 ## Live coding with parts and segments
 
@@ -354,14 +511,14 @@ As you can see, you need to introduce the `t` variable. To avoid this would unfo
 
 ### Parts cps and odd time signatures
 
-When you want to work with odd time signatures you could do it at any time. Because a cycle do not have some kind of a time signature grid and doesn't know what this means. The feeling of odd time signatures comes simply from the pattern. When you want 4 beats then you use 4 or 8 elements. When you want to use 3 beats then you use 3 or 6 elements and so on.
+When you want to work with odd time signatures you could do it at any time with everything that TidalCycles provide you. Because a cycle do not have a time signature grid and doesn't know what this means. The feeling of odd time signatures comes simply from the pattern. When you want 4 beats then you use 4 or 8 elements. When you want to use 3 beats then you use 3 or 6 elements and so on.
 
-So what's the matter here? When I work with parts and segments I want to change the feeling of the meter but try to stay at the same feeled tempo. When I change from a 4/4 time signature to a 7/8 time signature, then I add these values in my `mapfx` function. This uses the `fx` functionality from the `ur` function. This means you need to write `1:1` instead of `1` to switch parts and tempo. With the last digit, you are able to change the tempo, based on the value of it's position in the `mapfx` list. The value is multiplied with the first value, which is simply the cps.
+So what's the matter here? When I work with parts and segments I want to change the feeling of the meter but try to stay at the same feeled tempo. When I change from a 4/4 time signature to a 7/8 time signature, then I add these values in my `mapfx` function. This uses the `fx` functionality from the `ur` function. This means you need to write `1:1` instead of `1` to switch parts and tempo. With the last digit, you are able to change the tempo, based on the value of it's position in the `mapfx` list. The value is multiplied (and divided by 1) with the first value, which is simply the cps. In this way you can treat the second parameter of `mapfx` as your time signature which means that `4/4` is you `4/4` time signature and the value `7/8` is actually a `7/8` time signature. 
 
 ```haskell
 do
 let
-    fx = mapfx 0.50 [1, 8/7] -- <- this one was added
+    fx = mapfx 0.50 [4/4, 7/8] -- <- this one was added
     parts = transformStacker [
         stacker [
           ("lead", s "superpiano" <| n "c a f e")
