@@ -142,7 +142,7 @@ s1 = sheet {numerals = "<1 6#s 3 5>"}
 This is just a 6 step offset of the current chord. This means the chord will be played 6 half steps lower then the original chord. To use it use the `#t` identifier.
 
 ```haskell
-s1 = sheet {numerals = "<1 1 4 5#t>"}
+s1 = sheet {numerals = "<1 5#t 2 5>"}
 ```
 
 Usually you would apply the tritone substitution of a dominant chord, basically the fifth of the diatonic chords of a major scale. But we are able to create secondary dominants at any time and then use the tritone substitution identifier on it:

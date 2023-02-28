@@ -178,11 +178,3 @@ updown' p = updownBy 2 p
 downup = fastspread ($) [rev, id]
 downupBy t p = fast t $ spread ($) [rotR 1, id] $ spread ($) [id, rev] $ slow t $ p
 downup' p = downupBy 2 p
-
-open "0" $ note "[0,1,2,3]"
-
-
-noteMap (linexp 12 36 0.6 1.0) (note "14") -- (0>1)|0.7365...
-
-
-ncutoff $ s "superpiano" # note "0 12 24 36"

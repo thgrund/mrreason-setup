@@ -64,10 +64,3 @@ d1 $ stack [
     , seg 5 "drums"] -- # lpf' 2000 t
 
 hush
-
-
-drop "2" $ prog sheet "[1,3,5,8]" -- equals  prog sheet "[1,3,5,8]"
-
-prog sheet "[-2,1,3,8]" -- equals  prog sheet "[1,3,5,8]"
-
-prog s1 "[1,3,5,7]" 
