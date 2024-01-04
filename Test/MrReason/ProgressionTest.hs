@@ -18,7 +18,7 @@ sheet = Sheet {
 }
 
 test :: Microspec ()
-test = 
+test =
    describe "Function prog test" $ do
       describe "numerals pattern" $ do
         it "should create the correct pattern if you wrap the numerals with [ and ]" $ do
@@ -27,7 +27,7 @@ test =
             s2 = sheet {numerals = "[1]"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
-            expectedResult = prog s2 "[1,3,5,7]"            
+            expectedResult = prog s2 "[1,3,5,7]"
             in
               compareP overTimeSpan testMe expectedResult
         it "should create the correct pattern if you wrap the numerals with < and >" $ do
@@ -36,7 +36,7 @@ test =
             s2 = sheet {numerals = "<1>"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
-            expectedResult = prog s2 "[1,3,5,7]"            
+            expectedResult = prog s2 "[1,3,5,7]"
             in
               compareP overTimeSpan testMe expectedResult
         it "should create the correct pattern if you use the @ identifier" $ do
@@ -79,7 +79,7 @@ test =
             expectedResult = segment 1 $ note "[[0 0] 2]"
             in
               compareP overTimeSpan testMe expectedResult
-      describe "sheet key" $ do 
+      describe "sheet key" $ do
         it "should map the prog notes to numerals 1 of d major as d5" $ do
           let
             s1 = sheet {key = "d", numerals = "1"}
@@ -178,6 +178,14 @@ test =
             expectedResult = note "[-6,-2,1,5]"
             in
               compareP overTimeSpan testMe expectedResult
+        it "should apply 'T' identifier to numeral 1 of c major" $ do
+          let
+            s1 = sheet {numerals = "1#T"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = note "[6,10,13,17]"
+            in
+              compareP overTimeSpan testMe expectedResult
         it "should apply '+' identifier to numeral 1 of c major" $ do
           let
             s1 = sheet {numerals = "1#+"}
@@ -226,17 +234,25 @@ test =
             expectedResult = note "[0,3,4,7,8,11,12]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply 's' identifier to numeral 1 of c major" $ do
+        it "should apply 'S' identifier to numeral 1 of c major" $ do
           let
-            s1 = sheet {numerals = "1#s"}
+            s1 = sheet {numerals = "1#S"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[7,11,14,17]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply mixed identfiers '++so' identifier to numeral 1 of c major" $ do
+        it "should apply 's' identifier to numeral 1 of c major" $ do
           let
-            s1 = sheet {numerals = "1#++so"}
+            s1 = sheet {numerals = "1#s"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = note "[-5,-1,2,5]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should apply mixed identfiers '++So' identifier to numeral 1 of c major" $ do
+          let
+            s1 = sheet {numerals = "1#++So"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-3,1,4,7]"
