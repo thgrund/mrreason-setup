@@ -20,6 +20,65 @@ sheet = Sheet {
 test :: Microspec ()
 test = 
    describe "Function prog test" $ do
+      describe "numerals pattern" $ do
+        it "should create the correct pattern if you wrap the numerals with [ and ]" $ do
+          let
+            s1 = sheet {numerals = "1"}
+            s2 = sheet {numerals = "[1]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = prog s2 "[1,3,5,7]"            
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you wrap the numerals with < and >" $ do
+          let
+            s1 = sheet {numerals = "1"}
+            s2 = sheet {numerals = "<1>"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = prog s2 "[1,3,5,7]"            
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you use the @ identifier" $ do
+          let
+            s1 = sheet {numerals = "[1@3 2]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "1"
+            expectedResult = segment 1 $ note "[0@3 2]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you use the ! identifier" $ do
+          let
+            s1 = sheet {numerals = "[1!3 2!]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "1"
+            expectedResult = segment 1 $ note "[0 0 0 2 2]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you use the * identifier" $ do
+          let
+            s1 = sheet {numerals = "[1*3 2]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "1"
+            expectedResult = segment 1 $ note "[[0 0 0] 2]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you use the / identifier" $ do
+          let
+            s1 = sheet {numerals = "[1/2]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = fast 2 $ prog s1 "1"
+            expectedResult = note "[0 0]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should create the correct pattern if you use the . identifier" $ do
+          let
+            s1 = sheet {numerals = "[1 1 . 2]"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "1"
+            expectedResult = segment 1 $ note "[[0 0] 2]"
+            in
+              compareP overTimeSpan testMe expectedResult
       describe "sheet key" $ do 
         it "should map the prog notes to numerals 1 of d major as d5" $ do
           let
