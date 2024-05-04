@@ -7,7 +7,7 @@ import Prelude hiding ((<*), (*>))
 import Sound.Tidal.Context
 
 import Data.Function (on)
-import Data.List (transpose, sortBy, sort, intercalate, groupBy)
+import Data.List (transpose, sortBy, sort, intercalate, groupBy, drop, length)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Text.Read (readMaybe)
 import Data.Map (findWithDefault, insert, lookup, (!), fromList, member, delete)
@@ -31,10 +31,17 @@ data Sheet a = Sheet
   , functions :: Pattern a -> Pattern a
   }
 
+sheet = Sheet {
+  key = "c",
+  mode = "major",
+  numerals = "1",
+  functions = id
+}
+
 --
 -- Used for using parts and segments
 transformStacker parts = Data.Map.fromList $ map (\x -> (fst $ head x, transform x)) (transpose $ filledWithSilence parts)
-    where allowedAndNeededKeys = ["globalfx","pure", "lead", "bass", "key", "drums", "pad", "clock", "pod", "arp", "fx", "yamaha", "rhytm", "rGit", "lGit", "vocal", "strings"]
+    where allowedAndNeededKeys = ["globalfx","pure", "lead", "bass", "key", "drums", "pad", "clock", "pod", "arp", "fx", "yamaha", "rhytm", "rGit", "lGit", "vocal", "strings", "looper", "loop"]
           filledWithSilence parts = map (\x -> addSilence x) parts
           addSilence pt = map (\x -> if (member x (pt)) then (x, pt ! x) else (x, silence)) allowedAndNeededKeys
           transform x = transformBy 1 x
@@ -203,6 +210,8 @@ tParam4 f a b c d p = innerJoin $ (\w x y z -> f w x y z p) <$> a <*> b <*> c <*
 identifierCalcWith4 :: Note -> String ->  Int -> String -> Pattern Int -> ControlPattern
 identifierCalcWith4 key md nm ident pt = (numeralParse ident)
     where numeralParse ([]) = overrideScaleKeepNumerals (pure md)
+          numeralParse ('H':x:xs) | isDigit x = overrideScale' (customScaleMode ((ord x - ord '0') - 1) [0,2,3,5,7,8,11])
+          numeralParse ('l':xs) = overrideScale "locrian"
           numeralParse ('0':xs) = note (scale (pure md) ( (|+|) ((|+|) (pure nm) (-2)) pt) |+ (pure key))
           numeralParse ('p':xs) = note 1 + (numeralParse xs)
           numeralParse ('O':xs) = note 12 + (numeralParse xs)
@@ -212,6 +221,7 @@ identifierCalcWith4 key md nm ident pt = (numeralParse ident)
           numeralParse ('o':xs) = (numeralParse xs) - note 12
           numeralParse ('S':xs) = (note (scale (pure "major") (pt |+ 3)) |- note 7 ) |+| (note $ scale (pure "major") ((pure nm) |- 1) |+ (pure key) |+ 7)
           numeralParse ('s':xs) = ((note (scale (pure "major") (pt |+ 3)) |- note 7 ) |+| (note $ scale (pure "major") ((pure nm) |- 1) |+ (pure key) |+ 7)) |- note 12
+          --numeralParse ('d':xs) = overrideScale "locrian"
           numeralParse ('d':xs) = overrideScale "diminished"
           numeralParse ('a':xs) = overrideScale "augmented"
           numeralParse ('I':xs) = overrideScaleKeepNumerals "ionian"
@@ -220,9 +230,12 @@ identifierCalcWith4 key md nm ident pt = (numeralParse ident)
           numeralParse ('L':xs) = overrideScaleKeepNumerals "lydian"
           numeralParse ('M':xs) = overrideScaleKeepNumerals "mixolydian"
           numeralParse ('A':xs) = overrideScaleKeepNumerals "aeolian"
+          numeralParse ('H':xs) = overrideScaleKeepNumerals "harmonicMinor"
           numeralParse (x:xs) = numeralParse $ xs
           overrideScale sc = note (scale (pure sc) (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure nm))) |- note 2
+          overrideScale' l = note (toScale l (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure nm))) |- note 2
           overrideScaleKeepNumerals sc = note (scale (sc) ( (|+|) ((|+|) (pure nm) (-2)) pt) |+ (pure key))
+          customScaleMode x ds = map (subtract $ head calcList) $ calcList where calcList = Data.List.drop x $ take ((Data.List.length ds) + x) $ concatMap (\x -> map (+ x ) ds) [0,12..]
 
 isOffsetIdentifier :: Char -> Bool
 isOffsetIdentifier c = c `elem` ("+-toOpm" :: String)
@@ -271,8 +284,11 @@ gm = pF "gm"
 
 mode' name pt = 0.01 <~ s name # note pt
 
+mode'' name modePt pt = stack [pt, 0.005 <~ s name <| note modePt ]
+
 -- Generic version for streams
 streamUnset :: Stream -> String -> IO ()
 streamUnset stream k = modifyMVar_ (sStateMV stream) (return . Map.delete k)
 
 presetFile = pS "presetFile"
+songName = pS "songName"
