@@ -284,6 +284,7 @@ This is a list of all identifiers that exist yet:
 | L          | Uses a lydian scale at the specific position                 |
 | M          | Uses a mixolydian scale at the specific position             |
 | A          | Uses an aeolian scale at the specific position               |
+| H1-H7      | Uses the modes of harmonic minor                             |
 
 ### Borrowing Chords
 
