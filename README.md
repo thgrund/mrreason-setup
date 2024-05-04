@@ -33,6 +33,8 @@ This is a screenshot from my editor and it shows what the audience sees. The inf
 - Audio visualizer
 - Code (what you see is what you hear)
 
+The changes are not officially published, but can be found here: https://github.com/thgrund/pulsar-tidalcycles/tree/mrreason-setup
+
 ### ![Editor](./asset/images/Editor.png)
 
 ### Message flow between components
