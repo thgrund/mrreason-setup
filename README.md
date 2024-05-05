@@ -11,13 +11,14 @@ To be able to use the described concepts, the code under `./MrReason.hs` should 
 
 Beside the concepts I describe here, I highly frequently use some other projects I created in combination with them: 
 
-- [SuperDirtMixer](https://github.com/thgrund/SuperDirtMixer)
+- [SuperDirtMixer](https://github.com/thgrund/SuperDirtMixer/tree/mrreason-setup)
 - [TidalLooper](https://github.com/thgrund/tidal-looper)
-- [TidalVST](https://github.com/thgrund/TidalVST)
+- [TidalVST](https://github.com/thgrund/TidalVST/tree/mrreason-setup)
 - [Tidal Pedalboard effects](https://github.com/thgrund/tidal-pedalboard-effects)
 
 Table of content:
 
+- [Infrastructure overview](#infrastructure-overview)
 - [Applying modern western music theory](#applying-western-music-theory)
 - [Custom conditional functions](#custom-conditional-functions)
 - [Live coding with parts and segments (for longer compositions)](#live-coding-with-parts-and-segments)
@@ -106,7 +107,7 @@ superDirtOSC.sendMsg("/SuperDirtMixer/midiControlButton", num - 100);
 '/hydra/video': video path (relativ)
 ```
 
-## Remote.scd
+### Remote.scd
 
 Master gain Fader mit MIDI 
 
@@ -284,7 +285,7 @@ This is a list of all identifiers that exist yet:
 | L          | Uses a lydian scale at the specific position                 |
 | M          | Uses a mixolydian scale at the specific position             |
 | A          | Uses an aeolian scale at the specific position               |
-| H1-H7      | Uses the modes of harmonic minor                             |
+| H1-H7      | Uses the modes of h                                          |
 
 ### Borrowing Chords
 
