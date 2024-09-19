@@ -1,18 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.MrReason.ChordTest where
+module Sound.MrReason.ChordsSpec (main, spec) where
 
-import MrReason
-import Test.TestUtils
-import Test.Microspec
+import Sound.MrReason.Setup
+
+import Sound.TestUtils
+
+import Test.Hspec
+import Test.QuickCheck
 
 import Prelude hiding ((<*), (*>), drop)
 
 import Sound.Tidal.Params
 import Sound.Tidal.Pattern
 
-test :: Microspec ()
-test = 
+main :: IO ()
+main = hspec spec
+
+spec :: Spec
+spec = do
    describe "Chord function tests" $ do
      describe "inv" $ do
         it "should keep the original pattern with value 0" $ do

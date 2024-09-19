@@ -1,24 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, FlexibleInstances, TypeSynonymInstances #-}
 
-module Test.MrReason.ProgressionTest where
+module Sound.MrReason.SetupSpec (main, spec) where
 
-import MrReason
-import Test.TestUtils
-import Test.Microspec
+import Test.Hspec
+import Test.QuickCheck
 
-import Sound.Tidal.Params
-import Sound.Tidal.Pattern
-import Sound.Tidal.UI
+import Data.Ratio ((%))
 
-testSheet = Sheet {
-    key = "c",
-    mode = "major",
-    numerals = "1",
-    functions = id
-}
+import Sound.Tidal.Context
 
-test :: Microspec ()
-test =
+import Sound.MrReason.Setup
+import Sound.TestUtils
+
+
+main :: IO ()
+main = hspec spec
+
+spec :: Spec
+spec = do
+   let testSheet = Sheet {
+       key = "c",
+       mode = "major",
+       numerals = "1",
+       functions = id
+   }
    describe "Function prog test" $ do
       describe "numerals pattern" $ do
         it "should create the correct pattern if you wrap the numerals with [ and ]" $ do
@@ -441,6 +446,6 @@ test =
             s1 = testSheet {functions = (fast 2 . rev . (ply 2))}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1 3 5 7]"
-            expectedResult = note "[11! 7! 4! 0!]!"
+            expectedResult = note ("[11! 7! 4! 0!]!")
             in
               compareP overTimeSpan testMe expectedResult

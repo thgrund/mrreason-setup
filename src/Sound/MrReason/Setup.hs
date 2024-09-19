@@ -1,10 +1,10 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module MrReason where
+module Sound.MrReason.Setup (ur', transformStacker, mapfx, mode', mode'', Sheet (..), sheet, prog, drumBank, enableLiveGit, Sound.MrReason.Setup.drop, inverse, open) where
 
 import Prelude hiding ((<*), (*>))
-import Sound.Tidal.Context
+import Sound.Tidal.Context hiding (scale)
 
 import Data.Function (on)
 import Data.List (transpose, sortBy, sort, intercalate, groupBy, drop, length)
@@ -21,6 +21,16 @@ import Sound.Tidal.Core
 import Sound.Tidal.Utils
 
 import qualified Data.Map.Strict as Map
+
+scale = getScale (scaleTable ++ [
+    ("H1", [0,2,3,5,7,8,11])
+    , ("H2", [0,1,3,5,6,9,10])
+    , ("H3", [0,2,4,5,8,9,11])
+    , ("H4", [0,2,3,6,7,9,10])
+    , ("H5", [0,1,4,5,7,8,10])
+    , ("H6", [0,3,4,6,7,9,11])
+    , ("H7", [0,1,3,4,6,8,9])
+  ])
 
 -- Used for western music theory
 -- Sheet datatype
@@ -202,6 +212,11 @@ fillEmpty st = if st == [] then "0" else
           repl '-'   = 'm'
           repl c = c
 
+getPt :: Integer -> [(Integer, Pattern a)] -> Pattern a
+getPt label patterns = case Prelude.lookup label patterns of
+                      Just pattern -> pattern
+                      Nothing      -> error "Pattern not found"
+
 -- Start prog
 tParam4 :: (a -> b -> c -> d -> e -> Pattern f) -> (Pattern a -> Pattern b -> Pattern c -> Pattern d -> e -> Pattern f)
 tParam4 f a b c d p = innerJoin $ (\w x y z -> f w x y z p) <$> a <*> b <*> c <*> d
@@ -292,3 +307,7 @@ streamUnset stream k = modifyMVar_ (sStateMV stream) (return . Map.delete k)
 
 presetFile = pS "presetFile"
 songName = pS "songName"
+
+enableLiveGit :: Bool -> String -> Map.Map String (Pattern ValueMap) -> Map.Map String (Pattern ValueMap)
+enableLiveGit (False) _ st = st
+enableLiveGit (True) git st = Map.insert git (silence) $ Map.insert "loop" (s "liveGit") st
