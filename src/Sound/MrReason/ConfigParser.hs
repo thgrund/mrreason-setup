@@ -3,15 +3,16 @@
 
 module Sound.MrReason.ConfigParser (generateMidi) where
 
-import Data.Aeson (FromJSON, decodeFileStrict)
+import Data.Aeson (FromJSON, decodeFileStrict, parseJSON, (.:), (.:?), withObject)
 import Data.Map (lookup, (!), fromList)
+import Data.Maybe (fromMaybe)
 import Data.Char (digitToInt, ord)
 import GHC.Generics (Generic)
 import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 import Data.List.Split (splitOneOf, splitOn)
 
-import Sound.Tidal.Context hiding (segment)
+import Sound.Tidal.Context hiding (segment, offset)
 import Sound.Tidal.Time (Time)
 import Sound.Tidal.Pattern (Pattern)
 import Sound.Tidal.ParseBP
@@ -33,7 +34,8 @@ instance Exception SongMetadataException
 
 data Segment = Segment
   {
-    segment :: (String, String, Int, String, String)
+    segment :: (String, String, Int, String, String),
+    offset :: Maybe Int
   } deriving (Show, Generic)
 
 data SongMetadata = SongMetadata
@@ -44,7 +46,10 @@ data SongMetadata = SongMetadata
     segments :: [Segment]
   } deriving (Show, Generic)
 
-instance FromJSON Segment
+instance FromJSON Segment where
+  parseJSON = withObject "Segment" $ \v -> Segment
+    <$> v .: "segment"        -- Required field 'segment'
+    <*> v .:? "offset"        -- Optional field 'offset', using .:? to parse Maybe
 
 instance FromJSON SongMetadata
 
@@ -96,6 +101,9 @@ generateMidi jsonInputPath midiOutputPath stacker = do
     let pattern = foldl (\acc y -> acc ++ " " ++ (extractPattern (segment y))) "" (segments extractedResult)
     -- Step 5: Process the pattern into triplets
     let trp = map (tuplify3 . splitOneOf ":@") $ splitOn " " $ tail pattern
+    -- Create offset pattern
+    let rotLPattern = foldl (\ acc x -> acc ++ " " ++ (show $ fromMaybe 0 (offset x)) ++ "!" ++ (show $ extractDuration $ segment x) ) "" (segments extractedResult)
+    let ptOffset = parseBP_E('<' : (reverse $ '>' : (reverse rotLPattern))) :: Pattern Time
     -- Step 6: Extract time signatures
     let ts = timeSignatures extractedResult
     -- Step 7: Merge time signatures and triplets
@@ -111,15 +119,21 @@ generateMidi jsonInputPath midiOutputPath stacker = do
         scoreDuration = memoriesDuration
     }
     -- Step 10: Define the segment function
-    let seg' key = ur' (pure $ scoreDuration a) (urPattern a) ((transformStacker stacker) ! key)
-                    (mapfx (mapfxBpm (bpm extractedResult)) (mapfxTs ts))
+    let seg' key = tParam rotL ptOffset $ ur' (pure $ scoreDuration a) (urPattern a) ((transformStacker stacker) ! key)
+                (mapfx (mapfxBpm (bpm extractedResult)) (mapfxTs ts))
     -- Step 11: Write the MIDI file to disk
     toFile midiOutputPath (midiFile a [
-        midiNoteTrack AcousticGrandPiano (seg' "key") a,
-        midiNoteTrack Lead1Square (seg' "lead") a,
+        midiNoteTrack AcousticGrandPiano (unfix (# silence) (s "[mando1, mando2, piano, key, superpiano]") $ seg' "key") a,
+        midiNoteTrack Lead1Square (unfix (# silence) (s "[lead]") $ seg' "lead") a,
+        midiNoteTrack Banjo (unfix (# silence) (s "[sally]") $ seg' "lead") a,
+        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "lead") a,
         midiNoteTrack ElectricGuitarClean (fix (# silence) (s "[gitMode, lgitMode]") $ seg' "lGit") a,
         midiNoteTrack DistortionGuitar (fix (# silence) (s "[gitMode, lgitMode]")  $ seg' "rGit") a,
         midiNoteTrack Pad2Warm (seg' "pad") a,
-        midiNoteTrack ElectricBassFinger (seg' "bass" |- note 24) a,
+        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "fx") a,
+        midiNoteTrack ElectricBassFinger (unfix (# silence) (s "[fbass, bass]") $ seg' "bass" |- note 24) a,
+        midiNoteTrack Lead1Square (unfix (# silence) (s "[lead]") $ seg' "arp") a,
+        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "arp") a,
+        midiNoteTrack Lead2Sawtooth (unfix (# silence) (s "[saw]") $ seg' "arp") a,
         midiDrumTrack (seg' "drums") a
       ])

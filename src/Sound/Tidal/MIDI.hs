@@ -31,7 +31,8 @@ data TidalMIDIScore = TidalMIDIScore {
     tsTimeSignatures :: [(Time, Time, Int)],
     globalBPM :: Double,
     urPattern :: Pattern String,
-    scoreDuration :: Time}
+    scoreDuration :: Time
+  }
 
 midiScore = TidalMIDIScore {
   songName = "",
