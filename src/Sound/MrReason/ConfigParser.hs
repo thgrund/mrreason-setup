@@ -4,13 +4,14 @@
 module Sound.MrReason.ConfigParser (generateMidi) where
 
 import Data.Aeson (FromJSON, decodeFileStrict, parseJSON, (.:), (.:?), withObject)
-import Data.Map (lookup, (!), fromList)
+import Data.Map (lookup, (!), fromListWith, findWithDefault, fromList, toList)
 import Data.Maybe (fromMaybe)
 import Data.Char (digitToInt, ord)
 import GHC.Generics (Generic)
 import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 import Data.List.Split (splitOneOf, splitOn)
+import Data.List (sortOn, groupBy)
 
 import Sound.Tidal.Context hiding (segment, offset)
 import Sound.Tidal.Time (Time)
@@ -19,8 +20,8 @@ import Sound.Tidal.ParseBP
 
 import Control.Exception (throw, Exception)
 
-import Sound.Tidal.MIDI (TidalMIDIScore (..), midiDrumTrack, midiNoteTrack, midiFile)
-import Sound.MrReason.Setup (ur', transformStacker, mapfx)
+import Sound.Tidal.MIDI (TidalMIDIScore (..), midiNoteTrack, midiDrumTrack, midiFile)
+import Sound.MrReason.Setup (ur', transformStacker, mapfx, allowedAndNeededInstrumentKeys)
 
 import Sound.MIDI.General
 import Sound.MIDI.File.Save (toFile)
@@ -90,6 +91,24 @@ filterAdjacent ((x1, y1, z1):(x2, y2, z2):xs)
 mapfxTs ts = map (\ (x,y) -> (pure $ ((fromIntegral x) / (2 ^ y)))::Pattern Double ) ts
 mapfxBpm bpm = (pure $ (bpm * 0.5) / 120) :: Pattern Double
 
+mapSoundToMidiInstrument "sally" = Banjo
+mapSoundToMidiInstrument "lead" = Lead1Square
+mapSoundToMidiInstrument "pwm" = Lead3Calliope
+mapSoundToMidiInstrument "lGit" = ElectricGuitarClean
+mapSoundToMidiInstrument "git" = DistortionGuitar
+mapSoundToMidiInstrument "pad" = Pad2Warm
+mapSoundToMidiInstrument "bass" = ElectricBassFinger
+mapSoundToMidiInstrument "fbass" = ElectricBassFinger
+mapSoundToMidiInstrument "saw" = Lead2Sawtooth
+mapSoundToMidiInstrument _ = AcousticGrandPiano
+
+groupByKey :: String -> [Event ValueMap] -> [(String, [Event ValueMap])]
+groupByKey key events = Data.Map.toList $ Data.Map.fromListWith (++) [(value' ev, [ev]) | ev <- events]
+  where
+    value' ev = case Data.Map.lookup key (value ev) of
+      Just (VS s) -> s         -- Extract the value for the "s" key, assuming it's a VS (string) type
+      _           -> ""        -- Default to empty string if key not found or value is not a string
+
 generateMidi jsonInputPath midiOutputPath stacker = do
     -- Step 1: Decode the JSON file
     result <- decodeFileStrict jsonInputPath :: IO (Maybe SongMetadata)
@@ -118,22 +137,15 @@ generateMidi jsonInputPath midiOutputPath stacker = do
         urPattern = parseBP_E pattern,
         scoreDuration = memoriesDuration
     }
-    -- Step 10: Define the segment function
     let seg' key = tParam rotL ptOffset $ ur' (pure $ scoreDuration a) (urPattern a) ((transformStacker stacker) ! key)
                 (mapfx (mapfxBpm (bpm extractedResult)) (mapfxTs ts))
+    let extendPattern "lGit" = fix (# silence) (s "[gitMode, lgitMode]") $ seg' "lGit"
+        extendPattern "rGit" = fix (# silence) (s "[gitMode, lgitMode]") $ seg' "rGit"
+        extendPattern "bass" = seg' "bass" |- note 24
+        extendPattern x = seg' x
+    let transformPatternsToSortedEvents pt dur = map (\(x,y) -> (x, sortOn part y)) $ groupByKey "s" $ queryArc (pt) dur
+    let midiNoteTracks = map (\(x, evs) -> ( midiNoteTrack (mapSoundToMidiInstrument x) evs a )) $ concat $ map (\tcTrackName -> transformPatternsToSortedEvents (extendPattern tcTrackName) (Arc 0 (scoreDuration a))) allowedAndNeededInstrumentKeys
     -- Step 11: Write the MIDI file to disk
-    toFile midiOutputPath (midiFile a [
-        midiNoteTrack AcousticGrandPiano (unfix (# silence) (s "[mando1, mando2, piano, key, superpiano]") $ seg' "key") a,
-        midiNoteTrack Lead1Square (unfix (# silence) (s "[lead]") $ seg' "lead") a,
-        midiNoteTrack Banjo (unfix (# silence) (s "[sally]") $ seg' "lead") a,
-        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "lead") a,
-        midiNoteTrack ElectricGuitarClean (fix (# silence) (s "[gitMode, lgitMode]") $ seg' "lGit") a,
-        midiNoteTrack DistortionGuitar (fix (# silence) (s "[gitMode, lgitMode]")  $ seg' "rGit") a,
-        midiNoteTrack Pad2Warm (seg' "pad") a,
-        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "fx") a,
-        midiNoteTrack ElectricBassFinger (unfix (# silence) (s "[fbass, bass]") $ seg' "bass" |- note 24) a,
-        midiNoteTrack Lead1Square (unfix (# silence) (s "[lead]") $ seg' "arp") a,
-        midiNoteTrack Lead3Calliope (unfix (# silence) (s "[pwm]") $ seg' "arp") a,
-        midiNoteTrack Lead2Sawtooth (unfix (# silence) (s "[saw]") $ seg' "arp") a,
-        midiDrumTrack (seg' "drums") a
-      ])
+    toFile midiOutputPath (midiFile a
+      ((midiDrumTrack (seg' "drums") a) : midiNoteTracks)
+      )

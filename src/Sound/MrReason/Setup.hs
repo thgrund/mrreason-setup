@@ -1,7 +1,7 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Sound.MrReason.Setup (ur', transformStacker, mapfx, mode', mode'', Sheet (..), sheet, prog, drumBank, enableLiveGit, Sound.MrReason.Setup.drop, inverse, open) where
+module Sound.MrReason.Setup (ur', transformStacker, mapfx, mode', mode'', Sheet (..), sheet, prog, drumBank, enableLiveGit, Sound.MrReason.Setup.drop, inverse, open, cP', songNamePt, allowedAndNeededInstrumentKeys, allowedAndNeededKeys) where
 
 import Prelude hiding ((<*), (*>))
 import Sound.Tidal.Context hiding (scale)
@@ -48,11 +48,24 @@ sheet = Sheet {
   functions = id
 }
 
+allowedAndNeededInstrumentKeys = [
+           "lead", "bass", "key", "drums"
+          , "pad", "arp", "fx", "rhytm"
+          , "rGit", "lGit", "vocal", "strings"
+        ]
+
+allowedAndNeededDrumKeys = [ "drums" ]
+
+allowedAndNeededFunctionalKeys = ["globalfx", "pure", "looper", "loop" ]
+
+mergedAndNeededFunctionalKeys = allowedAndNeededInstrumentKeys ++ allowedAndNeededDrumKeys ++ allowedAndNeededFunctionalKeys
+
+allowedAndNeededKeys = mergedAndNeededFunctionalKeys ++ map (\x -> x ++ "Fx") mergedAndNeededFunctionalKeys
+
 --
 -- Used for using parts and segments
 transformStacker parts = Data.Map.fromList $ map (\x -> (fst $ head x, transform x)) (transpose $ filledWithSilence parts)
-    where allowedAndNeededKeys = ["globalfx","pure", "lead", "bass", "key", "drums", "pad", "clock", "pod", "arp", "fx", "yamaha", "rhytm", "rGit", "lGit", "vocal", "strings", "looper", "loop"]
-          filledWithSilence parts = map (\x -> addSilence x) parts
+    where filledWithSilence parts = map (\x -> addSilence x) parts
           addSilence pt = map (\x -> if (member x (pt)) then (x, pt ! x) else (x, silence)) allowedAndNeededKeys
           transform x = transformBy 1 x
           transformBy _ [] = []
@@ -82,8 +95,6 @@ gDelay = pF "gDelay"
 getN' :: Value -> Maybe Note
 getN' (VN f) = Just $ f
 getN' _  = Nothing
-
-cP' d s = innerJoin $ parseBP_E <$> _cX d getS s
 
 compareNoteEv (Event c1 t1 a1 v1) (Event c2 t2 a2 v2)
   | Data.Map.lookup "note" v1 == Data.Map.lookup "note" v2 = EQ
@@ -306,7 +317,9 @@ streamUnset :: Stream -> String -> IO ()
 streamUnset stream k = modifyMVar_ (sStateMV stream) (return . Map.delete k)
 
 presetFile = pS "presetFile"
-songName = pS "songName"
+songNamePt = pS "songName"
+
+cP' d s = innerJoin $ parseBP_E <$> _cX d getS s
 
 enableLiveGit :: Bool -> String -> Map.Map String (Pattern ValueMap) -> Map.Map String (Pattern ValueMap)
 enableLiveGit (False) _ st = st

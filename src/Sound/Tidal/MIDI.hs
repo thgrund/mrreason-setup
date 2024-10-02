@@ -1,8 +1,8 @@
 --module Sound.Tidal.MIDI (TidalMIDIScore (..), midiScore, songName, urPattern, globalBPM, scoreDuration) where
-module Sound.Tidal.MIDI (TidalMIDIScore (..), midiDrumTrack, midiNoteTrack, midiFile, transformDur) where
+module Sound.Tidal.MIDI (TidalMIDIScore (..), midiNoteTrack, midiDrumTrack, midiFile, transformDur) where
 
 import Data.List (groupBy, nub, partition)
-import Data.Map (lookup, insert)
+import Data.Map (lookup, insert, fromList)
 import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String (IsString)
 
@@ -42,7 +42,8 @@ midiScore = TidalMIDIScore {
   scoreDuration = 4
 }
 
-groupedEvents pt arc = groupBy (\ev1 ev2 -> whole ev1 == whole ev2) (sortOn part $ queryArc pt arc)
+groupedEvents = groupBy (\ev1 ev2 -> whole ev1 == whole ev2)
+sortedEvents pt arc = (sortOn part $ queryArc pt arc)
 
 extractNote (VN x) = unNote x
 extractNote _ = 0
@@ -64,6 +65,8 @@ tick = 480
 ticksPerCycle = tick * 4
 chan = ChannelMsg.toChannel 3
 vel  = VoiceMsg.toVelocity 64
+
+
 
 durationToTicks :: Integral b => Rational -> b
 durationToTicks dur = round (fromRational dur * fromIntegral ticksPerCycle)
@@ -154,9 +157,9 @@ transformDur ((a1, b1, c1):xs) (("noteOn", dur, pitch, cycleCount):ys)
             calcExtraRest _ [] _ = 0
             calcExtraRest ((x,_,_):xs) ((_, nom, den):ys) z = if (z - x >= 0) then calcRest (z - x) nom den else 0
 
-tcPatternToMidiEventTransformer pt arc ts= map (convert) groupedMidiNoteEvents
+tcPatternToMidiEventTransformer events ts= map (convert) groupedMidiNoteEvents
   where
-    noteEventList = map nub $ convertToDesiredOutput $ groupedEvents (pt) (arc)
+    noteEventList = map nub $ convertToDesiredOutput $ groupedEvents events
     groupedMidiNoteEvents = transformDur ts (addDurSum 0 $ calculateOffsets $ sortBy (sortNoteOffEventsByEndTime) $ (map (\(s, e, v) -> ("noteOff", e, v)) (concat noteEventList)) ++ (map (\(s, e, v) -> ("noteOn",s, v)) (concat noteEventList)))
     calculateOffsets events = reverse $ addOffsets $ reverse events
     addOffsets [] = []
@@ -166,13 +169,13 @@ tcPatternToMidiEventTransformer pt arc ts= map (convert) groupedMidiNoteEvents
       let msgType = if eventType == "noteOn" then VoiceMsg.NoteOn else VoiceMsg.NoteOff
       in  (durationToTicks duration, Event.MIDIEvent (ChannelMsg.Cons chan (ChannelMsg.Voice (msgType (VoiceMsg.toPitch ((round pitch) + 60)) vel))))
 
-midiNoteTrack instrument pt midiScore=
+midiNoteTrack instrument events midiScore =
    let chan = ChannelMsg.toChannel 3
        vel  = VoiceMsg.toVelocity 64
    in  EventList.fromPairList $
          (0, Event.MetaEvent (MetaEvent.TrackName (show instrument))):
          (0, Event.MIDIEvent (ChannelMsg.Cons chan (ChannelMsg.Voice (VoiceMsg.ProgramChange (instrumentToProgram instrument))))):
-         (tcPatternToMidiEventTransformer (pt) (Arc 0 (scoreDuration midiScore)) (tsTimeSignatures midiScore))
+         (tcPatternToMidiEventTransformer events (tsTimeSignatures midiScore))
 
 mapTCDrumToGeneralMIDI :: (Value, Value) -> Note
 mapTCDrumToGeneralMIDI (VS "bd", _) = 36
@@ -215,7 +218,7 @@ midiDrumTrack pt midiScore=
          (0, Event.MIDIEvent (ChannelMsg.Cons chan (ChannelMsg.Voice $ VoiceMsg.Control (VoiceMsg.toController 101) 0))):
          (0, Event.MIDIEvent (ChannelMsg.Cons chan (ChannelMsg.Voice $ VoiceMsg.Control (VoiceMsg.toController 100) 0))):
          (0, Event.MIDIEvent (ChannelMsg.Cons chan (ChannelMsg.Voice $ VoiceMsg.Control (VoiceMsg.toController 6) 6))):
-         (tcPatternToMidiEventTransformer (addDrumMidiNote pt) (Arc 0 (scoreDuration midiScore)) (tsTimeSignatures midiScore))
+         (tcPatternToMidiEventTransformer (sortedEvents (addDrumMidiNote pt) (Arc 0 (scoreDuration midiScore))) (tsTimeSignatures midiScore))
 
          -- Create time signature track for midiFile
 calculateTimeSignatures:: (RealFrac b, Integral a) => [(b, b, Int)] -> [(a, Event.T)]
