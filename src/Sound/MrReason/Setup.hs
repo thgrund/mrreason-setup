@@ -49,7 +49,7 @@ sheet = Sheet {
 }
 
 allowedAndNeededInstrumentKeys = [
-           "lead", "bass", "key", "drums"
+           "lead", "bass", "key"
           , "pad", "arp", "fx", "rhytm"
           , "rGit", "lGit", "vocal", "strings"
         ]
