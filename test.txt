@@ -1,0 +1,32 @@
+
+Error: [S-4804]
+       Stack failed to construct a build plan.
+       
+       While constructing the build plan, Stack encountered the following errors. The 'Stack
+       configuration' refers to the set of package versions specified by the snapshot (after any
+       dropped packages, or pruned GHC boot packages; if a boot package is replaced, Stack prunes
+       all other such packages that depend on it) and any extra-deps:
+       
+       In the dependencies for tidal-1.10.1:
+         * hosc must match >=0.21 && <0.22, but hosc-0.20 is in the Stack configuration (latest
+           matching version is 0.21.1).
+         * tidal-link must match >=1.2 && <1.3, but tidal-link-1.0.3 is in the Stack configuration
+           (latest matching version is 1.2.0).
+       The above is/are needed due to MrReason-0.1.0.0 -> tidal-1.10.1
+       
+       Some different approaches to resolving some or all of this:
+       
+         * To ignore all version constraints and build anyway, pass --allow-newer, or, in
+           /Users/mrreason/.stack/config.yaml (global configuration) or
+           /Users/mrreason/Development/tidalcycles/MrReason/stack.yaml (project-level
+           configuration), set allow-newer: true.
+         
+         * To ignore certain version constraints and build anyway, also add these package names
+           under allow-newer-deps: tidal.
+         
+         * Recommended action: try adding the following to your extra-deps in
+           /Users/mrreason/Development/tidalcycles/MrReason/stack.yaml
+           (project-level configuration):
+           
+           - hosc-0.21.1@sha256:95f06be1daa2a668f569d2f8b5e53887ef39c6e886e7c84ea574f85127d0abbf,2111
+           - tidal-link-1.2.0@sha256:56543c7b7bf6032c166ad7e9ba429ab9c4c053b80d39b62d6cfc69738f43be47,2017

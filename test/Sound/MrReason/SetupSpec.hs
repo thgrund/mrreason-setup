@@ -10,6 +10,7 @@ import Data.Ratio ((%))
 import Sound.Tidal.Context
 
 import Sound.MrReason.Setup
+import Sound.MrReason.Sheet
 import Sound.TestUtils
 
 
@@ -125,9 +126,9 @@ spec = do
             expectedResult = note "[2,5,9,12]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should map the prog notes to numeral -2 of c major" $ do
+        it "should map the prog notes to numeral 5 with modifier o of c major" $ do
           let
-            s1 = testSheet {numerals = "-2"}
+            s1 = testSheet {numerals = "5:o"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-5,-1,2,5]"
@@ -150,9 +151,9 @@ spec = do
             expectedResult = note "[2,5,8,12]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should map the prog notes to numeral -2 of c minor" $ do
+        it "should map the prog notes to numeral 5 with o modifier of c minor" $ do
           let
-            s1 = testSheet {numerals = "-2", mode = "minor"}
+            s1 = testSheet {numerals = "5:o", mode = "minor"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-5,-2,2,5]"
@@ -161,7 +162,7 @@ spec = do
       describe "testSheet numerals with identifier for c major" $ do
         it "should apply 'o' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#o"}
+            s1 = testSheet {numerals = "1:o"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-12,-8,-5,-1]"
@@ -169,7 +170,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'O' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#O"}
+            s1 = testSheet {numerals = "1:O"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[12,16,19,23]"
@@ -177,7 +178,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 't' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#t"}
+            s1 = testSheet {numerals = "1:t"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-6,-2,1,5]"
@@ -185,39 +186,39 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'T' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#T"}
+            s1 = testSheet {numerals = "1:T"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[6,10,13,17]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply '+' identifier to numeral 1 of c major" $ do
+        it "should apply 'p' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#+"}
+            s1 = testSheet {numerals = "1:p"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[1,5,8,12]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply chained '+++' identifier to numeral 1 of c major" $ do
+        it "should apply chained 'ppp' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#+++"}
+            s1 = testSheet {numerals = "1:ppp"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[3,7,10,14]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply '-' identifier to numeral 1 of c major" $ do
+        it "should apply 'm' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#-"}
+            s1 = testSheet {numerals = "1:m"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-1,3,6,10]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply chained '---' identifier to numeral 1 of c major" $ do
+        it "should apply chained 'mmm' id:ntifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#---"}
+            s1 = testSheet {numerals = "1:mmm"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-3,1,4,8]"
@@ -225,7 +226,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'd' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#d"}
+            s1 = testSheet {numerals = "1:d"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8,9]"
             expectedResult = note "[0,1,3,4,6,7,9,10,12]"
@@ -233,7 +234,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'a' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#a"}
+            s1 = testSheet {numerals = "1:a"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,3,4,7,8,11,12]"
@@ -241,7 +242,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'S' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#S"}
+            s1 = testSheet {numerals = "1:S"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[7,11,14,17]"
@@ -249,15 +250,15 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 's' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#s"}
+            s1 = testSheet {numerals = "1:s"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-5,-1,2,5]"
             in
               compareP overTimeSpan testMe expectedResult
-        it "should apply mixed identfiers '++So' identifier to numeral 1 of c major" $ do
+        it "should apply mixed identfiers 'ppSo' identifier to numeral 1 of c major" $ do
           let
-            s1 = testSheet {numerals = "1#++So"}
+            s1 = testSheet {numerals = "1:ppoS"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[-3,1,4,7]"
@@ -266,7 +267,7 @@ spec = do
       describe "testSheet numerals with mode identifier for c major" $ do
         it "should apply 'I' identifier to numeral 1 of c major (override to Ionian)" $ do
           let
-            s1 = testSheet {numerals = "1#I"}
+            s1 = testSheet {numerals = "1:I"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,2,4,5,7,9,11,12]"
@@ -274,7 +275,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'I' identifier to numeral 7 of c major (override to Ionian)" $ do
           let
-            s1 = testSheet {numerals = "7#I"}
+            s1 = testSheet {numerals = "7:I"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[11,12,14,16,17,19,21,23]"
@@ -282,7 +283,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'D' identifier to numeral 1 of c major (override to Dorian)" $ do
           let
-            s1 = testSheet {numerals = "1#D"}
+            s1 = testSheet {numerals = "1:D"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,2,3,5,7,9,10,12]"
@@ -290,7 +291,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'D' identifier to numeral 6 of c major (override to Dorian)" $ do
           let
-            s1 = testSheet {numerals = "6#D"}
+            s1 = testSheet {numerals = "6:D"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[9,10,12,14,15,17,19,21]"
@@ -298,7 +299,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'P' identifier to numeral 1 of c major (override to Phrygian)" $ do
           let
-            s1 = testSheet {numerals = "1#P"}
+            s1 = testSheet {numerals = "1:P"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,1,3,5,7,8,10,12]"
@@ -306,7 +307,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'P' identifier to numeral 5 of c major (override to Phrygian)" $ do
           let
-            s1 = testSheet {numerals = "5#P"}
+            s1 = testSheet {numerals = "5:P"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[7,8,10,12,13,15,17,19]"
@@ -314,7 +315,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'L' identifier to numeral 1 of c major (override to Lydian)" $ do
           let
-            s1 = testSheet {numerals = "1#L"}
+            s1 = testSheet {numerals = "1:L"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,2,4,6,7,9,11,12]"
@@ -322,7 +323,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'L' identifier to numeral 4 of c major (override to Lydian)" $ do
           let
-            s1 = testSheet {numerals = "4#L"}
+            s1 = testSheet {numerals = "4:L"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[6,7,9,11,12,14,16,18]"
@@ -330,7 +331,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'M' identifier to numeral 1 of c major (override to Mixolydian)" $ do
           let
-            s1 = testSheet {numerals = "1#M"}
+            s1 = testSheet {numerals = "1:M"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,2,4,5,7,9,10,12]"
@@ -338,7 +339,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'M' identifier to numeral 3 of c major (override to Mixolydian)" $ do
           let
-            s1 = testSheet {numerals = "3#M"}
+            s1 = testSheet {numerals = "3:M"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[4,5,7,9,10,12,14,16]"
@@ -346,7 +347,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'A' identifier to numeral 1 of c major (override to Aeolian)" $ do
           let
-            s1 = testSheet {numerals = "1#A"}
+            s1 = testSheet {numerals = "1:A"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[0,2,3,5,7,8,10,12]"
@@ -354,7 +355,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'A' identifier to numeral 2 of c major (override to Aeolian)" $ do
           let
-            s1 = testSheet {numerals = "2#A"}
+            s1 = testSheet {numerals = "2:A"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[2,3,5,7,8,10,12,14]"
@@ -362,7 +363,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H' identifier to numeral 5 of c minor (override to harmonic minor)" $ do
           let
-            s1 = testSheet {numerals = "5#H"}
+            s1 = testSheet {numerals = "5:H"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7,8]"
             expectedResult = note "[7,8,11,12,14,15,17,19]"
@@ -370,7 +371,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H1' identifier to numeral 1 of mode 1 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H1"}
+            s1 = testSheet {numerals = "1:H1"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,2,3,5,7,8,11]"
@@ -378,7 +379,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H2' identifier to numeral 1 of mode 2 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H2"}
+            s1 = testSheet {numerals = "1:H2"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,1,3,5,6,9,10]"
@@ -386,7 +387,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H3' identifier to numeral 1 of mode 3 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H3"}
+            s1 = testSheet {numerals = "1:H3"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,2,4,5,8,9,11]"
@@ -394,7 +395,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H4' identifier to numeral 1 of mode 4 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H4"}
+            s1 = testSheet {numerals = "1:H4"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,2,3,6,7,9,10]"
@@ -402,7 +403,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H5' identifier to numeral 1 of mode 5 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H5"}
+            s1 = testSheet {numerals = "1:H5"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,1,4,5,7,8,10]"
@@ -410,7 +411,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H6' identifier to numeral 1 of mode 6 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H6"}
+            s1 = testSheet {numerals = "1:H6"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,3,4,6,7,9,11]"
@@ -418,7 +419,7 @@ spec = do
               compareP overTimeSpan testMe expectedResult
         it "should apply 'H7' identifier to numeral 1 of mode 7 of harmonic minor " $ do
           let
-            s1 = testSheet {numerals = "1#H7"}
+            s1 = testSheet {numerals = "1:H7"}
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,2,3,4,5,6,7]"
             expectedResult = note "[0,1,3,4,6,8,9]"

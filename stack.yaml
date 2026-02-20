@@ -65,3 +65,9 @@ packages:
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+extra-deps:
+  - tidal-1.10.1@sha256:78341c01002163364c4ff9e808c993d686405b0b43f16c0f5063a90389133e7a,3692
+  - tidal-core-1.10.1@sha256:8300662a368613cff926acd21a52de79138871430a3e12ca7bbc945ba05a009d,2002
+  - hosc-0.21.1@sha256:95f06be1daa2a668f569d2f8b5e53887ef39c6e886e7c84ea574f85127d0abbf,2111
+  - tidal-link-1.2.0@sha256:56543c7b7bf6032c166ad7e9ba429ab9c4c053b80d39b62d6cfc69738f43be47,2017
