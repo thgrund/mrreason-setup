@@ -64,6 +64,8 @@ shallUIBeUpdated = pB "shallUIBeUpdated"
 
 shallLoadPreset = pB "shallLoadPreset"
 
+neoVimSearch = pS "neoVimSearch"
+
 data StreamConfig = StreamConfig
     { streamLoadConfig :: Pattern Bool
     , streamLoadPreset :: Pattern Bool
@@ -98,6 +100,6 @@ generateStreams orbitJsonInputPath songJsonInputPath p conf stackers = do
         controlOffset = ((patternify rotL) $ cP' "0" "offset")
         globalControlOffset = ((patternify rotL) $ cP' "0" "globalOffset")
     mapM_ (\(i, name) -> p (ID.ID{ID.fromID = (show (toInteger ( i + 1)))}) . (|< orbit (pure i)) . (|< shallUIBeUpdated (streamConfigUIUpdate conf)) $ controlOffset $ globalControlOffset $ (seg name)) labelsWithNumber
-    p "ping" . (|< orbit 31) $ (ping conf) <~ s (pure (songName songJsonResult ++ "Ping")) # shallLoadConfig (streamLoadConfig conf) # shallLoadPreset (streamLoadPreset conf)
-
+    p "ping" . (|< orbit 31) $ (ping conf) <~  s (pure (songName songJsonResult ++ "Ping")) # shallLoadConfig (streamLoadConfig conf) # shallLoadPreset (streamLoadPreset conf) 
+    p "search" . (|< orbit 31) $ controlOffset $ globalControlOffset $ s "neoVimSearch" # neoVimSearch (cP' "none" "neoVimSearch")
 -- p 6 . (|< orbit 5) $ s (pure (songName songJsonResult ++ "Ping")) # shallLoadConfig (streamConfigLoadPreset conf)

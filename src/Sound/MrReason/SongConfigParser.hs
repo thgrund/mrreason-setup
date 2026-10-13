@@ -64,7 +64,7 @@ instance Exception SongMetadataException
 -- Define the Person data type
 
 data Segment = Segment
-    { segment :: (String, String, Int, String, String)
+    { segment :: (String, String, Int, String, String, Maybe String)
     , offset :: Maybe Int
     }
     deriving (Show, Generic)
@@ -92,9 +92,9 @@ extractMetadata (Just metadata) = metadata
 extractMetadata Nothing = throw SongMetadataNotFoundException
 
 --
-extractDuration (_, _, c, _, _) = c
+extractDuration (_, _, c, _, _, _) = c
 
-extractPattern (_, _, _, d, _) = d
+extractPattern (_, _, _, d, _, _) = d
 
 tuplify3 :: [a] -> (a, a, a)
 tuplify3 [x, y, z] = (x, y, z)
