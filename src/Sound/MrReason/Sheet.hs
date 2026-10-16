@@ -32,7 +32,7 @@ import Sound.Tidal.Core
 import Sound.Tidal.Pattern
 import Sound.Tidal.Utils
 import Prelude hiding ((*>), (<*))
-
+import Sound.MrReason.Numeral (Numeral (Numeral), Modifier (..))
 
 scale =
   getScale
@@ -52,7 +52,7 @@ scale =
 data Sheet a = Sheet
   { key :: Pattern Note
   , mode :: Pattern String
-  , numerals :: Pattern String
+  , numerals :: Pattern Numeral
   , functions :: Pattern a -> Pattern a
   }
 
@@ -93,38 +93,45 @@ parseNumerals st
     isNumCharOrMinus c = isDigit c || c == '-'
 
 -- key mode numerals identifier
-identifierCalcWith :: Note -> String -> String -> Pattern Int -> ControlPattern
-identifierCalcWith key md trnm pt = (numeralParse ident)
+identifierCalcWith :: Note -> String -> Numeral -> Pattern Int -> ControlPattern
+identifierCalcWith key md numeral pt = (numeralParse numeral)
  where
-  numeralTuple = parseNumerals (trnm)
-  ident = identifierPat numeralTuple
-  nm = numeralPat numeralTuple
-  numeralParse ([]) = overrideScaleKeepNumerals (pure md)
-  numeralParse ('H' : x : xs) | isDigit x = overrideScale' (customScaleMode ((ord x - ord '0') - 1) [0, 2, 3, 5, 7, 8, 11])
-  numeralParse ('l' : xs) = overrideScale "locrian"
-  numeralParse ('0' : xs) = note (scale (pure md) ((|+|) ((|+|) (pure nm) (-2)) pt) |+ (pure key))
-  numeralParse ('p' : xs) = note 1 + (numeralParse xs)
-  numeralParse ('O' : xs) = note 12 + (numeralParse xs)
-  numeralParse ('m' : xs) = (numeralParse xs) - note 1
-  numeralParse ('t' : xs) = (numeralParse xs) - note 6
-  numeralParse ('T' : xs) = (numeralParse xs) + note 6
-  numeralParse ('o' : xs) = (numeralParse xs) - note 12
-  numeralParse ('S' : xs) = (note (scale (pure "major") (pt |+ 3)) |- note 7) |+| (note $ scale (pure "major") ((pure nm) |- 1) |+ (pure key) |+ 7)
-  numeralParse ('s' : xs) = ((note (scale (pure "major") (pt |+ 3)) |- note 7) |+| (note $ scale (pure "major") ((pure nm) |- 1) |+ (pure key) |+ 7)) |- note 12
-  -- numeralParse ('d':xs) = overrideScale "locrian"
-  numeralParse ('d' : xs) = overrideScale "diminished"
-  numeralParse ('a' : xs) = overrideScale "augmented"
-  numeralParse ('I' : xs) = overrideScaleKeepNumerals "ionian"
-  numeralParse ('D' : xs) = overrideScaleKeepNumerals "dorian"
-  numeralParse ('P' : xs) = overrideScaleKeepNumerals "phrygian"
-  numeralParse ('L' : xs) = overrideScaleKeepNumerals "lydian"
-  numeralParse ('M' : xs) = overrideScaleKeepNumerals "mixolydian"
-  numeralParse ('A' : xs) = overrideScaleKeepNumerals "aeolian"
-  numeralParse ('H' : xs) = overrideScaleKeepNumerals "harmonicMinor"
-  numeralParse (x : xs) = numeralParse $ xs
-  overrideScale sc = note (scale (pure sc) (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure nm))) |- note 2
-  overrideScale' l = note (toScale l (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure nm))) |- note 2
-  overrideScaleKeepNumerals sc = note (scale (sc) ((|+|) ((|+|) (pure nm) (-2)) pt) |+ (pure key))
+  -- numeralTuple = parseNumerals (trnm)
+  -- ident = identifierPat numeralTuple
+  -- nm = numeralPat numeralTuple
+  numeralParse (Numeral r []) = overrideScaleKeepNumerals (pure md) r
+  -- numeralParse ('H' : x : xs) | isDigit x = overrideScale' (customScaleMode ((ord x - ord '0') - 1) [0, 2, 3, 5, 7, 8, 11])
+  -- numeralParse (Numeral r (Locrian : xs)) = overrideScale "locrian" r
+  -- numeralParse ('0' : xs) = note (scale (pure md) ((|+|) ((|+|) (pure nm) (-2)) pt) |+ (pure key))
+  numeralParse (Numeral r (HarmonicMode1 : xs)) = harmonicScale '1' r
+  numeralParse (Numeral r (HarmonicMode2 : xs)) = harmonicScale '2' r
+  numeralParse (Numeral r (HarmonicMode3 : xs)) = harmonicScale '3' r
+  numeralParse (Numeral r (HarmonicMode4 : xs)) = harmonicScale '4' r
+  numeralParse (Numeral r (HarmonicMode5 : xs)) = harmonicScale '5' r
+  numeralParse (Numeral r (HarmonicMode6 : xs)) = harmonicScale '6' r
+  numeralParse (Numeral r (HarmonicMode7 : xs)) = harmonicScale '7' r
+  numeralParse (Numeral r (Plus : xs)) = note 1 + (numeralParse (Numeral r xs))
+  numeralParse (Numeral r (Minus : xs)) = (numeralParse (Numeral r xs)) - note 1
+  numeralParse (Numeral r (TritonusSubstitutionUp : xs)) = (numeralParse (Numeral r xs)) + note 6
+  numeralParse (Numeral r (TritonusSubstitutionDown : xs)) = (numeralParse (Numeral r xs)) - note 6
+  numeralParse (Numeral r (OctaveUp : xs)) = (numeralParse (Numeral r xs)) + note 12
+  numeralParse (Numeral r (OctaveDown : xs)) = (numeralParse (Numeral r xs)) - note 12
+  numeralParse (Numeral r (SecondaryDominantUp : xs)) = (note (scale (pure "major") (pt |+ 3)) |- note 7) |+| (note $ scale (pure "major") ((pure r) |- 1) |+ (pure key) |+ 7)
+  numeralParse (Numeral r (SecondaryDominantDown : xs)) = ((note (scale (pure "major") (pt |+ 3)) |- note 7) |+| (note $ scale (pure "major") ((pure r) |- 1) |+ (pure key) |+ 7)) |- note 12
+  numeralParse (Numeral r (Diminished : xs)) = overrideScale "diminished" r
+  numeralParse (Numeral r (Augmented : xs)) = overrideScale "augmented" r
+  numeralParse (Numeral r (Ionian : xs)) = overrideScaleKeepNumerals "ionian" r
+  numeralParse (Numeral r (Dorian : xs)) = overrideScaleKeepNumerals "dorian" r
+  numeralParse (Numeral r (Phrygian : xs)) = overrideScaleKeepNumerals "phrygian" r
+  numeralParse (Numeral r (Lydian : xs)) = overrideScaleKeepNumerals "lydian" r
+  numeralParse (Numeral r (Mixolydian : xs)) = overrideScaleKeepNumerals "mixolydian" r
+  numeralParse (Numeral r (Aeolian : xs)) = overrideScaleKeepNumerals "aeolian" r
+  numeralParse (Numeral r (HarmonicMinor : xs)) = overrideScaleKeepNumerals "harmonicMinor" r
+  numeralParse (Numeral r (x : xs)) = numeralParse (Numeral r xs)
+  overrideScale sc r = note (scale (pure sc) (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure r))) |- note 2
+  overrideScale' l r = note (toScale l (pt |- 1)) |+ note (pure key) |+| note (scale (pure md) ((pure r))) |- note 2
+  harmonicScale x r = overrideScale' (customScaleMode ((ord x - ord '0') - 1) [0, 2, 3, 5, 7, 8, 11]) r
+  overrideScaleKeepNumerals sc r = note (scale (sc) ((|+|) ((|+|) (pure r) (-2)) pt) |+ (pure key))
   customScaleMode x ds = map (subtract $ head calcList) $ calcList where calcList = Data.List.drop x $ take ((Data.List.length ds) + x) $ concatMap (\x -> map (+ x) ds) [0, 12 ..]
 
 isOffsetIdentifier :: Char -> Bool
@@ -136,7 +143,7 @@ compareIdent a b
   | isOffsetIdentifier a && not (isOffsetIdentifier b) = LT
   | otherwise = GT
 
-identifierCalc :: Pattern Note -> Pattern String -> Pattern String -> Pattern Int -> ControlPattern
+identifierCalc :: Pattern Note -> Pattern String -> Pattern Numeral -> Pattern Int -> ControlPattern
 identifierCalc key md nm pt = patternify3 identifierCalcWith (segment 1 $ key) (segment 1 $ md) (segment 1 $ nm) pt
 
 prog :: Sheet ValueMap -> Pattern Int -> ControlPattern

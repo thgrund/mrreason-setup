@@ -192,6 +192,14 @@ spec = do
             expectedResult = note "[6,10,13,17]"
             in
               compareP overTimeSpan testMe expectedResult
+        it "should apply '+' modifier to numeral 1 of c major" $ do
+          let
+            s1 = testSheet {numerals = "1:+"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = note "[1,5,8,12]"
+            in
+              compareP overTimeSpan testMe expectedResult
         it "should apply 'p' identifier to numeral 1 of c major" $ do
           let
             s1 = testSheet {numerals = "1:p"}
@@ -206,6 +214,14 @@ spec = do
             overTimeSpan = (Arc 0 1)
             testMe = prog s1 "[1,3,5,7]"
             expectedResult = note "[3,7,10,14]"
+            in
+              compareP overTimeSpan testMe expectedResult
+        it "should apply '-' identifier to numeral 1 of c major" $ do
+          let
+            s1 = testSheet {numerals = "1:-"}
+            overTimeSpan = (Arc 0 1)
+            testMe = prog s1 "[1,3,5,7]"
+            expectedResult = note "[-1,3,6,10]"
             in
               compareP overTimeSpan testMe expectedResult
         it "should apply 'm' identifier to numeral 1 of c major" $ do

@@ -19,6 +19,7 @@ source-repository head
 
 library
     exposed-modules:
+        Sound.MrReason.Numeral
         Sound.MrReason.Setup
         Sound.MrReason.Sheet
         Sound.Tidal.MIDI
@@ -41,7 +42,8 @@ library
         midi >=0.2.2.4,
         aeson >=2.1.2.1,
         split >=0.2.5,
-        bytestring >=0.11.5.3
+        bytestring >=0.11.5.3,
+        parsec >= 3.1.16.1
 
 test-suite MrReason-test
     type:             exitcode-stdio-1.0
